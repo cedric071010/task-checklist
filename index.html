@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Task Core Checklist</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #080a0f;
+        --panel: #10141d;
+        --panel-soft: #151b27;
+        --line: rgba(159, 178, 210, 0.18);
+        --text: #eef4ff;
+        --muted: #8996aa;
+        --accent: #26e0c3;
+        --accent-2: #7aa7ff;
+        --danger: #ff6f91;
+        --glow-a: rgba(38, 224, 195, 0.13);
+        --glow-b: rgba(122, 167, 255, 0.12);
+        --shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at 15% 0%, var(--glow-a), transparent 28%),
+          radial-gradient(circle at 84% 20%, var(--glow-b), transparent 30%),
+          var(--bg);
+        color: var(--text);
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      button {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--text);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03));
+        cursor: pointer;
+      }
+
+      button:hover,
+      button:focus-visible,
+      input:focus-visible {
+        border-color: rgba(38, 224, 195, 0.62);
+        outline: none;
+      }
+
+      .app-shell {
+        display: grid;
+        grid-template-columns: 320px minmax(0, 1fr);
+        min-height: 100vh;
+      }
+
+      .sidebar {
+        border-right: 1px solid var(--line);
+        background: rgba(11, 15, 23, 0.78);
+        backdrop-filter: blur(18px);
+        padding: 24px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 22px;
+      }
+
+      .brand-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .brand h1,
+      .brand p,
+      .panel-title h2,
+      .panel-title p {
+        margin: 0;
+      }
+
+      .brand h1 {
+        font-size: 20px;
+        letter-spacing: 0;
+      }
+
+      .brand p,
+      .eyebrow,
+      .muted,
+      .stat-label,
+      .empty,
+      .task-meta {
+        color: var(--muted);
+      }
+
+      .theme-toggle {
+        width: 34px;
+        height: 34px;
+        padding: 0;
+        border-color: rgba(255, 255, 255, 0.24);
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      }
+
+      .language-toggle {
+        min-width: 50px;
+        height: 34px;
+        padding: 0 10px;
+        color: var(--accent);
+        background: rgba(38, 224, 195, 0.08);
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .shutdown-button {
+        display: grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        padding: 0;
+        color: #ffd6df;
+        border-color: rgba(255, 111, 145, 0.4);
+        background: rgba(255, 111, 145, 0.1);
+        font-size: 20px;
+        line-height: 1;
+      }
+
+      .side-panel {
+        display: grid;
+        gap: 12px;
+      }
+
+      .stat-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(18, 24, 35, 0.72);
+        padding: 14px;
+      }
+
+      .stat-value {
+        display: block;
+        margin-top: 4px;
+        font-size: 28px;
+        font-weight: 800;
+        color: var(--accent);
+      }
+
+      .main-view {
+        min-width: 0;
+        padding: 28px 30px;
+        overflow: auto;
+      }
+
+      .content-header {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 18px;
+      }
+
+      .eyebrow {
+        margin: 0 0 5px;
+        font-size: 12px;
+        text-transform: uppercase;
+      }
+
+      .content-header h2 {
+        margin: 0;
+        font-size: clamp(30px, 5vw, 52px);
+        line-height: 1.05;
+        letter-spacing: 0;
+      }
+
+      .editable-title {
+        display: inline-block;
+        max-width: 100%;
+        border-radius: 8px;
+        padding: 2px 4px;
+        overflow-wrap: anywhere;
+        cursor: text;
+      }
+
+      .editable-title:focus-visible {
+        outline: 1px solid rgba(38, 224, 195, 0.62);
+        background: rgba(38, 224, 195, 0.08);
+      }
+
+      .completion-state {
+        display: none;
+        margin: 10px 0 0;
+        color: var(--accent);
+        font-weight: 800;
+      }
+
+      .completion-state.is-visible {
+        display: block;
+      }
+
+      .quick-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      .icon-button,
+      .primary-button {
+        display: grid;
+        place-items: center;
+        min-width: 42px;
+        min-height: 42px;
+        padding: 0 12px;
+        font-weight: 800;
+      }
+
+      .primary-button {
+        border-color: rgba(38, 224, 195, 0.72);
+        background: rgba(38, 224, 195, 0.16);
+        color: var(--accent);
+      }
+
+      .danger-button:hover {
+        border-color: rgba(255, 111, 145, 0.55);
+        color: #ffd6df;
+      }
+
+      .composer {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+
+      .task-input {
+        width: 100%;
+        min-height: 48px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(14, 19, 29, 0.72);
+        color: var(--text);
+        padding: 0 14px;
+      }
+
+      .task-input::placeholder {
+        color: #68758a;
+      }
+
+      .task-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .task-row {
+        display: grid;
+        grid-template-columns: 48px minmax(0, 1fr) 42px;
+        align-items: center;
+        gap: 12px;
+        min-height: 68px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(14, 19, 29, 0.7);
+        padding: 9px 12px;
+      }
+
+      .task-row.done {
+        border-color: rgba(38, 224, 195, 0.62);
+        background: rgba(38, 224, 195, 0.1);
+      }
+
+      .check-button {
+        display: grid;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        padding: 0;
+        color: transparent;
+      }
+
+      .task-row.done .check-button {
+        color: var(--accent);
+        border-color: rgba(38, 224, 195, 0.58);
+      }
+
+      .task-main {
+        min-width: 0;
+      }
+
+      .task-title {
+        display: block;
+        overflow-wrap: anywhere;
+        font-weight: 750;
+      }
+
+      .task-row.done .task-title {
+        color: #aeb9cc;
+        text-decoration: line-through;
+      }
+
+      .task-meta {
+        display: block;
+        margin-top: 5px;
+        font-size: 13px;
+      }
+
+      .delete-button {
+        display: grid;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        padding: 0;
+        color: #ffd6df;
+        background: rgba(255, 111, 145, 0.08);
+      }
+
+      .empty {
+        border: 1px dashed var(--line);
+        border-radius: 8px;
+        padding: 28px;
+        text-align: center;
+      }
+
+      .closed-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        display: none;
+        place-items: center;
+        background:
+          radial-gradient(circle at 48% 18%, var(--glow-a), transparent 30%),
+          var(--bg);
+        color: var(--text);
+        text-align: center;
+        padding: 24px;
+      }
+
+      .closed-screen.is-visible {
+        display: grid;
+      }
+
+      .closed-screen h2 {
+        margin: 0 0 8px;
+        font-size: 30px;
+      }
+
+      .closed-screen p {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      body.is-closed .app-shell {
+        display: none;
+      }
+
+      @media (max-width: 840px) {
+        .app-shell {
+          display: block;
+        }
+
+        .sidebar {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .main-view {
+          padding: 22px 18px;
+        }
+
+        .content-header {
+          display: block;
+        }
+
+        .quick-actions {
+          justify-content: flex-start;
+          margin-top: 14px;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .composer {
+          grid-template-columns: 1fr;
+        }
+
+        .primary-button {
+          min-height: 46px;
+        }
+
+        .task-row {
+          grid-template-columns: 42px minmax(0, 1fr) 38px;
+          gap: 9px;
+          padding: 9px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div>
+            <h1>Task Core</h1>
+            <p id="brandSubtitle">Local Checklist</p>
+          </div>
+          <div class="brand-actions">
+            <button id="themeToggle" class="theme-toggle" title="切换主题色" aria-label="切换主题色"></button>
+            <button id="languageToggle" class="language-toggle" title="Switch language">EN</button>
+            <button id="shutdown" class="shutdown-button" title="保存并关闭" aria-label="保存并关闭">×</button>
+          </div>
+        </div>
+
+        <div class="side-panel">
+          <div class="stat-card">
+            <span id="totalLabel" class="stat-label">全部任务</span>
+            <strong id="totalCount" class="stat-value">0</strong>
+          </div>
+          <div class="stat-card">
+            <span id="doneLabel" class="stat-label">本次已勾选</span>
+            <strong id="doneCount" class="stat-value">0</strong>
+          </div>
+          <div class="stat-card">
+            <span id="leftLabel" class="stat-label">剩余</span>
+            <strong id="leftCount" class="stat-value">0</strong>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main-view">
+        <header class="content-header">
+          <div>
+            <p class="eyebrow">Checklist</p>
+            <h2 id="mainTitle" class="editable-title" contenteditable="true" spellcheck="false" title="点击修改标题">今天要做的事</h2>
+            <p id="completionState" class="completion-state">已经全部完成</p>
+          </div>
+          <div class="quick-actions">
+            <button id="resetChecks" class="icon-button" title="清空本次勾选" aria-label="清空本次勾选">↺</button>
+            <button id="clearTasks" class="icon-button danger-button" title="删除所有任务" aria-label="删除所有任务">×</button>
+          </div>
+        </header>
+
+        <form id="taskForm" class="composer">
+          <input id="taskInput" class="task-input" type="text" autocomplete="off" maxlength="120" placeholder="输入任务，例如：整理音乐文件夹" />
+          <button class="primary-button" type="submit">＋</button>
+        </form>
+
+        <section id="taskList" class="task-list" aria-label="任务列表"></section>
+      </main>
+    </div>
+
+    <div id="closedScreen" class="closed-screen" hidden>
+      <div>
+        <h2>Task Core 已关闭</h2>
+        <p>任务已保存，可以关闭这个浏览器页面。</p>
+      </div>
+    </div>
+
+    <script>
+      function storagePrefix() {
+        const source = `${location.origin}${location.pathname}`;
+        let hash = 0;
+        for (const char of source) {
+          hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+        }
+        return `taskCore:${hash.toString(36)}:`;
+      }
+
+      const STORAGE_PREFIX = storagePrefix();
+      const STORAGE_KEY = `${STORAGE_PREFIX}items`;
+      const THEME_KEY = `${STORAGE_PREFIX}theme`;
+      const TITLE_KEY = `${STORAGE_PREFIX}title`;
+      const LANGUAGE_KEY = `${STORAGE_PREFIX}language`;
+
+      function migrateLegacyStorage() {
+        const legacyKeys = {
+          items: "taskCoreChecklistItems",
+          theme: "taskCoreThemeIndex",
+          title: "taskCoreChecklistTitle",
+          language: "taskCoreLanguage"
+        };
+        if (!localStorage.getItem(STORAGE_KEY) && localStorage.getItem(legacyKeys.items)) {
+          localStorage.setItem(STORAGE_KEY, localStorage.getItem(legacyKeys.items));
+        }
+        if (!localStorage.getItem(THEME_KEY) && localStorage.getItem(legacyKeys.theme)) {
+          localStorage.setItem(THEME_KEY, localStorage.getItem(legacyKeys.theme));
+        }
+        if (!localStorage.getItem(TITLE_KEY) && localStorage.getItem(legacyKeys.title)) {
+          localStorage.setItem(TITLE_KEY, localStorage.getItem(legacyKeys.title));
+        }
+        if (!localStorage.getItem(LANGUAGE_KEY) && localStorage.getItem(legacyKeys.language)) {
+          localStorage.setItem(LANGUAGE_KEY, localStorage.getItem(legacyKeys.language));
+        }
+        Object.values(legacyKeys).forEach((key) => localStorage.removeItem(key));
+      }
+
+      migrateLegacyStorage();
+      const i18n = {
+        zh: {
+          htmlLang: "zh-CN",
+          languageToggle: "EN",
+          switchLanguage: "Switch language",
+          brandSubtitle: "本地清单",
+          theme: "切换主题色",
+          shutdown: "保存并关闭",
+          titleTip: "点击修改标题",
+          defaultTitle: "今天要做的事",
+          complete: "已经全部完成",
+          total: "全部任务",
+          done: "本次已勾选",
+          left: "剩余",
+          reset: "清空本次勾选",
+          clear: "删除所有任务",
+          inputPlaceholder: "输入任务，例如：整理音乐文件夹",
+          add: "新增任务",
+          taskList: "任务列表",
+          empty: "还没有任务，先添加一条。",
+          checkTask: "勾选任务",
+          deleteTask: "删除任务",
+          confirmClear: "确定删除所有任务吗？",
+          closedTitle: "Task Core 已关闭",
+          closedText: "任务已保存，可以关闭这个浏览器页面。"
+        },
+        en: {
+          htmlLang: "en",
+          languageToggle: "中文",
+          switchLanguage: "切换语言",
+          brandSubtitle: "Local Checklist",
+          theme: "Change theme color",
+          shutdown: "Save and close",
+          titleTip: "Click to edit title",
+          defaultTitle: "Things to do today",
+          complete: "Everything is complete",
+          total: "All tasks",
+          done: "Checked this time",
+          left: "Left",
+          reset: "Clear checks",
+          clear: "Delete all tasks",
+          inputPlaceholder: "Enter a task, for example: organize the music folder",
+          add: "Add task",
+          taskList: "Task list",
+          empty: "No tasks yet. Add one first.",
+          checkTask: "Check task",
+          deleteTask: "Delete task",
+          confirmClear: "Delete all tasks?",
+          closedTitle: "Task Core closed",
+          closedText: "Tasks are saved. You can close this browser page."
+        }
+      };
+      const themes = [
+        ["#26e0c3", "#7aa7ff", "rgba(38, 224, 195, 0.13)", "rgba(122, 167, 255, 0.12)"],
+        ["#ff6f91", "#ffc857", "rgba(255, 111, 145, 0.14)", "rgba(255, 200, 87, 0.11)"],
+        ["#a7f070", "#4cc9f0", "rgba(167, 240, 112, 0.12)", "rgba(76, 201, 240, 0.1)"]
+      ];
+
+      const state = {
+        tasks: loadTasks(),
+        language: localStorage.getItem(LANGUAGE_KEY) || "zh",
+        title: localStorage.getItem(TITLE_KEY) || "",
+        checkedIds: new Set(),
+        themeIndex: Number.parseInt(localStorage.getItem(THEME_KEY) || "0", 10) || 0
+      };
+
+      const els = {
+        brandSubtitle: document.querySelector("#brandSubtitle"),
+        themeToggle: document.querySelector("#themeToggle"),
+        languageToggle: document.querySelector("#languageToggle"),
+        shutdown: document.querySelector("#shutdown"),
+        mainTitle: document.querySelector("#mainTitle"),
+        completionState: document.querySelector("#completionState"),
+        totalLabel: document.querySelector("#totalLabel"),
+        doneLabel: document.querySelector("#doneLabel"),
+        leftLabel: document.querySelector("#leftLabel"),
+        totalCount: document.querySelector("#totalCount"),
+        doneCount: document.querySelector("#doneCount"),
+        leftCount: document.querySelector("#leftCount"),
+        taskForm: document.querySelector("#taskForm"),
+        taskInput: document.querySelector("#taskInput"),
+        taskList: document.querySelector("#taskList"),
+        resetChecks: document.querySelector("#resetChecks"),
+        clearTasks: document.querySelector("#clearTasks"),
+        closedScreen: document.querySelector("#closedScreen")
+      };
+
+      function t(key) {
+        return i18n[state.language][key] || i18n.zh[key] || key;
+      }
+
+      function isDefaultTitle(title) {
+        return title === i18n.zh.defaultTitle || title === i18n.en.defaultTitle;
+      }
+
+      function displayTitle() {
+        return state.title && !isDefaultTitle(state.title) ? state.title : t("defaultTitle");
+      }
+
+      function loadTasks() {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+          return Array.isArray(parsed) ? parsed.filter((task) => task && task.id && task.title) : [];
+        } catch {
+          return [];
+        }
+      }
+
+      function saveTasks() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.tasks));
+      }
+
+      function saveTitle() {
+        const title = els.mainTitle.textContent.trim() || t("defaultTitle");
+        if (isDefaultTitle(title)) {
+          state.title = "";
+          localStorage.removeItem(TITLE_KEY);
+          els.mainTitle.textContent = t("defaultTitle");
+          return;
+        }
+        state.title = title;
+        localStorage.setItem(TITLE_KEY, title);
+        els.mainTitle.textContent = title;
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function applyTheme() {
+        const theme = themes[((state.themeIndex % themes.length) + themes.length) % themes.length];
+        const root = document.documentElement;
+        root.style.setProperty("--accent", theme[0]);
+        root.style.setProperty("--accent-2", theme[1]);
+        root.style.setProperty("--glow-a", theme[2]);
+        root.style.setProperty("--glow-b", theme[3]);
+      }
+
+      function render() {
+        const doneCount = state.checkedIds.size;
+        const allDone = state.tasks.length > 0 && doneCount === state.tasks.length;
+        els.totalCount.textContent = String(state.tasks.length);
+        els.doneCount.textContent = String(doneCount);
+        els.leftCount.textContent = String(Math.max(0, state.tasks.length - doneCount));
+        if (document.activeElement !== els.mainTitle) {
+          els.mainTitle.textContent = displayTitle();
+        }
+        els.completionState.classList.toggle("is-visible", allDone);
+        els.completionState.textContent = t("complete");
+
+        if (!state.tasks.length) {
+          els.taskList.innerHTML = `<div class="empty">${t("empty")}</div>`;
+          return;
+        }
+
+        els.taskList.innerHTML = state.tasks
+          .map((task, index) => {
+            const done = state.checkedIds.has(task.id);
+            return `
+              <article class="task-row${done ? " done" : ""}" data-id="${task.id}">
+                <button class="check-button" type="button" title="${t("checkTask")}" aria-label="${t("checkTask")}">${done ? "✓" : "✓"}</button>
+                <div class="task-main">
+                  <strong class="task-title">${escapeHtml(task.title)}</strong>
+                  <span class="task-meta">Task ${String(index + 1).padStart(2, "0")}</span>
+                </div>
+                <button class="delete-button" type="button" title="${t("deleteTask")}" aria-label="${t("deleteTask")}">×</button>
+              </article>
+            `;
+          })
+          .join("");
+      }
+
+      function addTask(title) {
+        const trimmed = title.trim();
+        if (!trimmed) return;
+        state.tasks.unshift({
+          id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+          title: trimmed
+        });
+        saveTasks();
+        render();
+      }
+
+      function deleteTask(id) {
+        state.tasks = state.tasks.filter((task) => task.id !== id);
+        state.checkedIds.delete(id);
+        saveTasks();
+        render();
+      }
+
+      els.taskForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        addTask(els.taskInput.value);
+        els.taskInput.value = "";
+        els.taskInput.focus();
+      });
+
+      els.taskList.addEventListener("click", (event) => {
+        const row = event.target.closest(".task-row");
+        if (!row) return;
+
+        if (event.target.closest(".delete-button")) {
+          deleteTask(row.dataset.id);
+          return;
+        }
+
+        if (event.target.closest(".check-button")) {
+          if (state.checkedIds.has(row.dataset.id)) {
+            state.checkedIds.delete(row.dataset.id);
+          } else {
+            state.checkedIds.add(row.dataset.id);
+          }
+          render();
+        }
+      });
+
+      els.resetChecks.addEventListener("click", () => {
+        state.checkedIds.clear();
+        render();
+      });
+
+      els.clearTasks.addEventListener("click", () => {
+        if (!state.tasks.length) return;
+        if (confirm(t("confirmClear"))) {
+          state.tasks = [];
+          state.checkedIds.clear();
+          saveTasks();
+          render();
+        }
+      });
+
+      function showClosedScreen() {
+        document.body.classList.add("is-closed");
+        els.closedScreen.hidden = false;
+        els.closedScreen.classList.add("is-visible");
+      }
+
+      function closeApp() {
+        saveTitle();
+        saveTasks();
+        window.open("", "_self");
+        window.close();
+        setTimeout(showClosedScreen, 250);
+      }
+
+      els.shutdown.addEventListener("click", closeApp);
+
+      function applyLanguage() {
+        document.documentElement.lang = t("htmlLang");
+        els.brandSubtitle.textContent = t("brandSubtitle");
+        els.languageToggle.textContent = t("languageToggle");
+        els.languageToggle.title = t("switchLanguage");
+        els.themeToggle.title = t("theme");
+        els.themeToggle.setAttribute("aria-label", t("theme"));
+        els.shutdown.title = t("shutdown");
+        els.shutdown.setAttribute("aria-label", t("shutdown"));
+        els.mainTitle.title = t("titleTip");
+        els.completionState.textContent = t("complete");
+        els.totalLabel.textContent = t("total");
+        els.doneLabel.textContent = t("done");
+        els.leftLabel.textContent = t("left");
+        els.resetChecks.title = t("reset");
+        els.resetChecks.setAttribute("aria-label", t("reset"));
+        els.clearTasks.title = t("clear");
+        els.clearTasks.setAttribute("aria-label", t("clear"));
+        els.taskInput.placeholder = t("inputPlaceholder");
+        els.taskForm.querySelector("button").title = t("add");
+        els.taskForm.querySelector("button").setAttribute("aria-label", t("add"));
+        els.taskList.setAttribute("aria-label", t("taskList"));
+        els.closedScreen.querySelector("h2").textContent = t("closedTitle");
+        els.closedScreen.querySelector("p").textContent = t("closedText");
+        render();
+      }
+
+      els.languageToggle.addEventListener("click", () => {
+        state.language = state.language === "zh" ? "en" : "zh";
+        localStorage.setItem(LANGUAGE_KEY, state.language);
+        applyLanguage();
+      });
+
+      els.mainTitle.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          els.mainTitle.blur();
+        }
+      });
+
+      els.mainTitle.addEventListener("blur", () => {
+        saveTitle();
+        render();
+      });
+
+      els.themeToggle.addEventListener("click", () => {
+        state.themeIndex = (state.themeIndex + 1) % themes.length;
+        localStorage.setItem(THEME_KEY, String(state.themeIndex));
+        applyTheme();
+      });
+
+      applyTheme();
+      els.mainTitle.textContent = displayTitle();
+      applyLanguage();
+    </script>
+  </body>
+</html>
