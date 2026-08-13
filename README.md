@@ -1,31 +1,35 @@
-# Task Core Checklist
+# Task Checklist
 
-Task Core Checklist is a small local checklist web app inspired by a music-library style interface. It runs as a single HTML page and does not require a backend server.
+A small checklist that runs entirely in one HTML file. There is no account,
+backend, installation, or build step.
 
 ## Features
 
-- Add tasks directly in the browser.
-- Delete individual tasks or clear the whole list.
-- Check tasks during the current session.
-- Save task text locally in the browser.
-- Keep checked state temporary, so every new page load starts unchecked.
-- Edit and save the checklist title.
-- Show a completion message when all tasks are checked.
-- Switch UI language between Chinese and English.
-- Change the accent color theme.
-- Save-and-close button that stores the current tasks and title before closing or showing a closed screen.
-- Keep copied checklist files independent when they are opened from different paths.
+- Add and remove tasks, or clear the whole list.
+- Edit the checklist title.
+- Switch between Chinese and English.
+- Choose from three accent colors.
+- Keep task text and preferences in the browser.
+- Start every visit with a fresh set of checkmarks.
+- Use copied or renamed HTML files as separate checklists.
 
 ## Usage
 
-Open `index.html` in a browser.
+Download `index.html` and open it in a modern browser. You can rename or copy
+the file to make more checklists.
 
-No installation, build step, or backend service is required.
+Everything stays on the device and no data is sent to a server.
 
 ## Data Storage
 
-Tasks, title, language choice, and theme choice are saved in `localStorage`.
+Tasks, title, language, and theme are saved in the browser's `localStorage`.
 
-Storage is scoped to the checklist file path. If you copy `checklist.html` or `index.html` to another folder or rename it, the copied file starts with its own separate checklist data in the same browser.
+Storage is scoped to the file path. A copied or renamed file starts with its
+own data in the same browser. Clearing site data or using another browser will
+not carry the checklist across.
 
 Checked task state is intentionally not saved. This keeps each checklist session fresh when the page is reopened.
+
+## License
+
+[MIT](LICENSE)
